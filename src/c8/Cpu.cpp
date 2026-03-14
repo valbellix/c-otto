@@ -77,16 +77,23 @@ void Cpu::executeOpCode(ushort opCode) {
     const ushort firstMask = 0xF000;
     const ushort secondMask = 0x0F00;
     const ushort lastTwoMask = 0x00FF;
+    const ushort lastThreeMask = 0x0FFF;
 
     const ushort opCodeClass = opCode & firstMask;
-    const ushort secondChar = (opCode & secondMask) >> 8;
-    const uchar lastTwo = opCode & lastTwoMask;
+    const ushort secondNibble = (opCode & secondMask) >> 8;
+    const uchar lastTwoNibbles = opCode & lastTwoMask;
+    const ushort lastThreeNibbles = opCode & lastThreeMask;
+
+    bool incrementPc = true;
 
     switch (opCodeClass)
     {
     case 0x0000:
         break;
     case 0x1000:
+        // 1NNN - jumps to NNN
+        m_pc = lastThreeNibbles;
+        incrementPc = false;
         break;
     case 0x2000:
         break;
@@ -98,17 +105,20 @@ void Cpu::executeOpCode(ushort opCode) {
         break;
     case 0x6000:
         // 6XNN - sets VX to NN
-        m_registerV[secondChar] = lastTwo;
+        m_registerV[secondNibble] = lastTwoNibbles;
         break;
     case 0x7000:
         // 7XNN - adds NN to VX
-        m_registerV[secondChar] += lastTwo;
+        m_registerV[secondNibble] += lastTwoNibbles;
+        // TODO: any carry flag to set???
         break;
     case 0x8000:
         break;
     case 0x9000:
         break;
     case 0xA000:
+        // ANNN - sets index I to NNN
+        m_index = lastThreeNibbles;
         break;
     case 0xB000:
         break;
@@ -124,8 +134,10 @@ void Cpu::executeOpCode(ushort opCode) {
         throw new UnknownOpCodeException(opCode);
     }
 
-    // then increment the PC by two
-    m_pc += 2;
+    if (incrementPc) {
+        // then increment the PC by two
+        m_pc += 2;
+    }
 }
 
 const uchar Cpu::m_fontSet[] = {
