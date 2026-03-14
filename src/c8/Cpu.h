@@ -2,6 +2,7 @@
 #define _Cpu_h_
 
 #include "Defs.h"
+#include <cstdlib>
 
 #define MEM_SIZE 4096
 #define REG_SIZE 16
@@ -35,8 +36,10 @@ private:
 
     uchar m_key[KEYPAD_STATES];
 
-    void fetchOpCode();
+    ushort fetchOpCode() const;
+    void executeOpCode(ushort opCode);
     void loadFontSet(const ushort startLocation);
+    void beep();
 
     static const uchar m_fontSet[];
 };

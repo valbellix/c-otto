@@ -17,7 +17,7 @@ void Emulator::init() {
 }
 
 void Emulator::loadFile(const std::string& fileName) {
-    if (!fileExist) {
+    if (!fileExist(fileName)) {
         throw new FileNotFoundException(fileName);
     }
 
