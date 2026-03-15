@@ -83,12 +83,22 @@ void Cpu::executeOpCode(ushort opCode) {
     const ushort secondNibble = (opCode & secondMask) >> 8;
     const uchar lastTwoNibbles = opCode & lastTwoMask;
     const ushort lastThreeNibbles = opCode & lastThreeMask;
+    const uchar thirdNibble = (lastThreeNibbles & 0x100) >> 8;
 
     bool incrementPc = true;
 
-    switch (opCodeClass)
-    {
+    switch (opCodeClass) {
     case 0x0000:
+        switch (opCode) {
+        case 0x00E0:
+            // 00E0 - clears the screen
+            memset(m_graphicSys, 0, sizeof(m_graphicSys));
+            break;
+        case 0x00EE:
+            // 00EE - jumps back form subroutine
+            m_pc = m_stack[m_stackPointer--];
+            break;
+        }
         break;
     case 0x1000:
         // 1NNN - jumps to NNN
@@ -96,12 +106,29 @@ void Cpu::executeOpCode(ushort opCode) {
         incrementPc = false;
         break;
     case 0x2000:
+        // 2NNN - calls subroutine at address NNN (it stores the current pc to the stack)
+
+        // TODO: what if the stack is full?
+        m_stack[m_stackPointer++] = m_pc;
+        m_pc = lastThreeNibbles;
         break;
     case 0x3000:
+        // 3XNN - skips one instruction if V[X] == NN
+        if (m_registerV[secondNibble] == lastTwoNibbles) {
+            m_pc += 2;
+        }
         break;
     case 0x4000:
+        // 4XNN - skips one instruction if V[X] != NN
+        if (m_registerV[secondNibble] != lastTwoNibbles) {
+            m_pc += 2;
+        }
         break;
     case 0x5000:
+        // 5XY0 - skips one instruction if V[X] == V[Y]
+        if (m_registerV[secondNibble] == m_registerV[thirdNibble]) {
+            m_pc += 2;
+        }
         break;
     case 0x6000:
         // 6XNN - sets VX to NN
@@ -115,6 +142,10 @@ void Cpu::executeOpCode(ushort opCode) {
     case 0x8000:
         break;
     case 0x9000:
+        // 9XY0 - skips one instruction if V[X] == V[Y]
+        if (m_registerV[secondNibble] != m_registerV[thirdNibble]) {
+            m_pc += 2;
+        }
         break;
     case 0xA000:
         // ANNN - sets index I to NNN
