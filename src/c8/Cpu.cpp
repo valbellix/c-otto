@@ -5,9 +5,12 @@
 
 #include <cstring>
 #include <string>
+#include <cstdlib>
+#include <ctime>
 
+Cpu::Cpu(const Type type): m_type(type) {}
 
-Cpu::Cpu() {}
+Cpu::Cpu(): Cpu(COSMAC_VIP) {}
 
 void Cpu::init() {
     m_index = 0;
@@ -87,6 +90,9 @@ void Cpu::executeOpCode(ushort opCode) {
 
     bool incrementPc = true;
 
+    short subCode;
+    uchar originalValue;
+
     switch (opCodeClass) {
     case 0x0000:
         switch (opCode) {
@@ -140,6 +146,61 @@ void Cpu::executeOpCode(ushort opCode) {
         // TODO: any carry flag to set???
         break;
     case 0x8000:
+        subCode = opCode & 0xF00F;
+        switch (subCode) {
+        case 0x8000:
+            // 8XY0 - sets VX to VY
+            m_registerV[secondNibble] = m_registerV[thirdNibble];
+            break;
+        case 0x8001:
+            // 8XY1 - sets VX to VX | VY
+            m_registerV[secondNibble] = m_registerV[secondNibble] | m_registerV[thirdNibble];
+            break;
+        case 0x8002:
+            // 8XY2 - sets VX to VX & VY
+            m_registerV[secondNibble] = m_registerV[secondNibble] & m_registerV[thirdNibble];
+            break;
+        case 0x8003:
+            // 8XY3 - sets VX to VX ^ VY
+            m_registerV[secondNibble] = m_registerV[secondNibble] ^ m_registerV[thirdNibble];
+            break;
+        case 0x8004:
+            // 8XY4 - sets VX to VX + VY and sets VF=1 if the result overflows
+            originalValue = m_registerV[secondNibble];
+            m_registerV[secondNibble] = m_registerV[secondNibble] + m_registerV[thirdNibble];
+            m_registerV[0xF] = (m_registerV[secondNibble] < originalValue) ? 1 : 0;
+            break;
+        case 0x8005:
+            // 8XY5 - sets VX to VX - VY and sets VF=1, if we borrow from VF, we set it to 0
+            originalValue = m_registerV[secondNibble];
+            m_registerV[secondNibble] = m_registerV[secondNibble] - m_registerV[thirdNibble];
+            m_registerV[0xF] = (originalValue >= m_registerV[thirdNibble]) ? 1 : 0;
+            break;
+        case 0x8006:
+            // 8XY6 - sets VX to VY if COSMAC_VIP and shift left, it sets VF to the bit shifted out.
+            //        Otherwise it ignores VY and just shift VX
+            if (m_type == COSMAC_VIP) {
+                m_registerV[secondNibble] = m_registerV[thirdNibble];
+            }
+            m_registerV[0xF] = ((m_registerV[secondNibble] & 0x80) == 0x80) ? 1 : 0;
+            m_registerV[secondNibble] = m_registerV[secondNibble] << 1;
+        case 0x8007:
+            // 8XY7 - like 8XY5, but we do VY - VX
+            originalValue = m_registerV[secondNibble];
+            m_registerV[secondNibble] = m_registerV[thirdNibble] - m_registerV[secondNibble];
+            m_registerV[0xF] = (m_registerV[thirdNibble] >= originalValue) ? 1 : 0;
+            break;
+        case 0x800E:
+            // 8XYE - sets VX to VY if COSMAC_VIP and shift right, it sets VF to the bit shifted out.
+            //        Otherwise it ignores VY and just shift VX
+            if (m_type == COSMAC_VIP) {
+                m_registerV[secondNibble] = m_registerV[thirdNibble];
+            }
+            m_registerV[0xF] = ((m_registerV[secondNibble] & 0x80) == 0x80) ? 1 : 0;
+            m_registerV[secondNibble] = m_registerV[secondNibble] >> 1;
+        default:
+            throw new UnknownOpCodeException(opCode);
+        }
         break;
     case 0x9000:
         // 9XY0 - skips one instruction if V[X] == V[Y]
@@ -152,8 +213,19 @@ void Cpu::executeOpCode(ushort opCode) {
         m_index = lastThreeNibbles;
         break;
     case 0xB000:
+        // BNNN - jumps to NNN + the value of V0 if the type is COSMAC_VIP, otherwise
+        //        it decodes as BXNN and it jums to NNN + VX
+        if (m_type == COSMAC_VIP) {
+            m_pc = lastThreeNibbles + m_registerV[0];
+        } else {
+            m_pc = lastTwoNibbles + m_registerV[thirdNibble];
+        }
+        incrementPc = false;
         break;
     case 0xC000:
+        // CXNN - generates a random number, it does a bitwise AND with NN and store in VX
+        std::srand(std::time(0));
+        m_registerV[secondNibble] = (static_cast<uchar>(std::rand()) % UCHAR_MAX) & lastTwoNibbles;
         break;
     case 0xD000:
         break;

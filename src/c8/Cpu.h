@@ -12,12 +12,21 @@
 
 class Cpu {
 public:
+    enum Type {
+        COSMAC_VIP,
+        CHIP_48,
+        SUPER_CHIP
+    };
+
     Cpu();
+    Cpu(const Type);
     ~Cpu() {}
 
     void init();
     void executeCycle();
     void loadBufferIntoMemory(const uchar* buffer, const size_t lenght);
+
+    Type getType() const { return m_type; }
 
 private:
     uchar m_memory[MEM_SIZE];
@@ -35,6 +44,8 @@ private:
     ushort m_stackPointer;
 
     uchar m_key[KEYPAD_STATES];
+
+    Type m_type;
 
     ushort fetchOpCode() const;
     void executeOpCode(ushort opCode);
