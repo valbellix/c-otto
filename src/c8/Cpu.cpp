@@ -8,7 +8,7 @@
 #include <cstdlib>
 #include <ctime>
 
-Cpu::Cpu(const Type type): m_type(type) {}
+Cpu::Cpu(const Type type): m_type(type), m_updateScreen(false) {}
 
 Cpu::Cpu(): Cpu(COSMAC_VIP) {}
 
@@ -19,6 +19,8 @@ void Cpu::init() {
     m_delayTimer = 0;
     m_soundTimer = 0;
     m_stackPointer = 0;
+
+    m_updateScreen = false;
 
     // clear memory and load fontset from 0x50
     memset(m_memory, 0, sizeof(m_memory));
@@ -81,12 +83,14 @@ void Cpu::executeOpCode(ushort opCode) {
     const ushort secondMask = 0x0F00;
     const ushort lastTwoMask = 0x00FF;
     const ushort lastThreeMask = 0x0FFF;
+    const ushort lastMask = 0x000F;
 
     const ushort opCodeClass = opCode & firstMask;
     const ushort secondNibble = (opCode & secondMask) >> 8;
     const uchar lastTwoNibbles = opCode & lastTwoMask;
     const ushort lastThreeNibbles = opCode & lastThreeMask;
     const uchar thirdNibble = (lastThreeNibbles & 0x100) >> 8;
+    const uchar lastNibble = static_cast<const uchar>(opCode & lastMask);
 
     bool incrementPc = true;
 
@@ -104,6 +108,8 @@ void Cpu::executeOpCode(ushort opCode) {
             // 00EE - jumps back form subroutine
             m_pc = m_stack[m_stackPointer--];
             break;
+        default:
+            throw new UnknownOpCodeException(opCode);
         }
         break;
     case 0x1000:
@@ -228,10 +234,47 @@ void Cpu::executeOpCode(ushort opCode) {
         m_registerV[secondNibble] = (static_cast<uchar>(std::rand()) % UCHAR_MAX) & lastTwoNibbles;
         break;
     case 0xD000:
+        // DXYN - well... it displays a sprite of N pixels starting from I to XY
+        //        the sprite should not go over 64x32, so it should be cropped
+        display(m_registerV[secondNibble] & 63, m_registerV[thirdNibble] & 31, lastNibble);
         break;
     case 0xE000:
+        switch (lastTwoNibbles) {
+        case 0x9E:
+            // EX9E - skip the following instruction if the key pointed by VX != 0 (i.e. is pressed)
+            if (m_key[m_registerV[secondNibble]] != 0) {
+                m_pc += 4;
+                incrementPc = false;
+            }
+            break;
+        case 0xA1:
+            // EXA1 - skip the following instruction if the key pointed by VX == 0 (i.e. is not pressed)
+            if (m_key[m_registerV[secondNibble]] == 0) {
+                m_pc += 4;
+                incrementPc = false;
+            }
+            break;
+        default:
+            throw new UnknownOpCodeException(opCode);
+        }
         break;
     case 0xF000:
+        switch (lastTwoNibbles) {
+        case 0x07:
+            // FX07 - sets VX to the delay timer value
+            m_registerV[secondNibble] = m_delayTimer;
+            break;
+        case 0x15:
+            // FX15 - sets the delay timer to the value in VX
+            m_delayTimer = m_registerV[secondNibble];
+            break;
+        case 0x18:
+            // FX18 sets the sound timer to the value in VX
+            m_soundTimer = m_registerV[secondNibble];
+            break;
+        default:
+            throw new UnknownOpCodeException(opCode);
+        }
         break;
     default:
         throw new UnknownOpCodeException(opCode);
@@ -241,6 +284,24 @@ void Cpu::executeOpCode(ushort opCode) {
         // then increment the PC by two
         m_pc += 2;
     }
+}
+
+void Cpu::display(const uchar startX, const uchar startY, const uchar height) {
+    m_registerV[0xF] = 0;
+    for (uchar y = 0; y < height; ++y) {
+        uchar row = m_memory[m_index + y];
+        for (uchar x = 0; x < 8; ++x) {
+            if ((row & (0x80 >> x)) != 0) {
+                ushort index = startX + x + ((startY + y) * 64);
+                if (m_graphicSys[index] == 1) {
+                    m_registerV[0xF] = 1;
+                }
+                m_graphicSys[index] ^= 1;
+            }
+        }
+    }
+
+    m_updateScreen = true;
 }
 
 const uchar Cpu::m_fontSet[] = {

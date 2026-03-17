@@ -26,6 +26,8 @@ public:
     void executeCycle();
     void loadBufferIntoMemory(const uchar* buffer, const size_t lenght);
 
+    bool updateScreen() const { return m_updateScreen; }
+
     Type getType() const { return m_type; }
 
 private:
@@ -47,10 +49,14 @@ private:
 
     Type m_type;
 
+    bool m_updateScreen;
+
     ushort fetchOpCode() const;
     void executeOpCode(ushort opCode);
     void loadFontSet(const ushort startLocation);
     void beep();
+
+    void display(const uchar x, const uchar y, const uchar n);
 
     static const uchar m_fontSet[];
 };
