@@ -12,4 +12,9 @@ add_executable(c-otto Main.cpp)
 target_link_libraries(c-otto
     PRIVATE
         c8
+        CLI11::CLI11
+)
+
+install(TARGETS c-otto
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
