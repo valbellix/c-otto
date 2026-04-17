@@ -96,6 +96,9 @@ void Cpu::executeOpCode(ushort opCode) {
 
     short subCode;
     uchar originalValue;
+    int keyIndex;
+    uchar val;
+    ushort oriIndex;
 
     switch (opCodeClass) {
     case 0x0000:
@@ -269,8 +272,42 @@ void Cpu::executeOpCode(ushort opCode) {
             m_delayTimer = m_registerV[secondNibble];
             break;
         case 0x18:
-            // FX18 sets the sound timer to the value in VX
+            // FX18 - sets the sound timer to the value in VX
             m_soundTimer = m_registerV[secondNibble];
+            break;
+        case 0x1E:
+            // FX1E - adds VX to index I, default implementation (COSMAC_VIP) does not set the carry flag
+            // Amiga interpreter used to do, some programs may rely on this behavior
+            oriIndex = m_index;
+            m_index += m_registerV[secondNibble];
+            if ((m_type != COSMAC_VIP) && m_index < oriIndex) {
+                m_registerV[0xF] = 1;
+            }
+            break;
+        case 0x0A:
+            // FX0A - Get key, it stops the execution and wait for key input
+            keyIndex = -1;
+            for (int i = 0; i < 16; ++i) {
+                if (m_key[i]) {
+                    keyIndex = i;
+                    break;
+                }
+            }
+            if (keyIndex == -1) {
+                // keep looping until a key is pressed
+                m_pc -=2;
+            } else {
+                m_registerV[secondNibble] = keyIndex;
+            }
+            break;
+        case 0x33:
+            // FX33 - Convert to BCD the content of VX and store it in memory at indexes I (hundreds), I+1 (tens) and I+2 (ones)
+            val = m_registerV[secondNibble];
+            m_memory[m_index + 2] = val % 10;
+            val = val / 10;
+            m_memory[m_index + 1] = val % 10;
+            val = val / 10;
+            m_memory[m_index] = val % 10;
             break;
         default:
             throw new UnknownOpCodeException(opCode);
