@@ -53,12 +53,13 @@ private:
 
     ushort fetchOpCode() const;
     void executeOpCode(ushort opCode);
-    void loadFontSet(const ushort startLocation);
+    void loadFontSet();
     void beep();
 
     void display(const uchar x, const uchar y, const uchar n);
 
     static const uchar m_fontSet[];
+    static const ushort m_fontStartLocation = 0x50;
 };
 
 #endif

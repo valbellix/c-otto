@@ -24,7 +24,7 @@ void Cpu::init() {
 
     // clear memory and load fontset from 0x50
     memset(m_memory, 0, sizeof(m_memory));
-    loadFontSet(0x50);
+    loadFontSet();
 
     memset(m_registerV, 0, sizeof(m_registerV));
     memset(m_graphicSys, 0, sizeof(m_graphicSys));
@@ -43,8 +43,8 @@ void Cpu::loadBufferIntoMemory(const uchar* buffer, const size_t length) {
     }
 }
 
-void Cpu::loadFontSet(const ushort startLocation) {
-    for (ushort i = startLocation; i < 80; ++i) {
+void Cpu::loadFontSet() {
+    for (ushort i = m_fontStartLocation; i < 80; ++i) {
         m_memory[i] = m_fontSet[i];
     }
 }
@@ -299,6 +299,10 @@ void Cpu::executeOpCode(ushort opCode) {
             } else {
                 m_registerV[secondNibble] = keyIndex;
             }
+            break;
+        case 0x29:
+            // FX29 - set the index to the hex value of the font contained in VX (remember that each font is 5 bytes)
+            m_index = m_fontStartLocation + (m_registerV[secondNibble] * 5);
             break;
         case 0x33:
             // FX33 - Convert to BCD the content of VX and store it in memory at indexes I (hundreds), I+1 (tens) and I+2 (ones)
