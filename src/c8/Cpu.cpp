@@ -302,7 +302,12 @@ void Cpu::executeOpCode(ushort opCode) {
             break;
         case 0x29:
             // FX29 - set the index to the hex value of the font contained in VX (remember that each font is 5 bytes)
-            m_index = m_fontStartLocation + (m_registerV[secondNibble] * 5);
+            // COSMAC_VIP has a different implementation that just take the last nibble of the content of VX
+            if (m_type != COSMAC_VIP) {
+                m_index = m_fontStartLocation + (m_registerV[secondNibble] * 5);
+            } else {
+                m_index = m_fontStartLocation + ((m_registerV[secondNibble] & 0x0F) * 5);
+            }
             break;
         case 0x33:
             // FX33 - Convert to BCD the content of VX and store it in memory at indexes I (hundreds), I+1 (tens) and I+2 (ones)
@@ -312,6 +317,26 @@ void Cpu::executeOpCode(ushort opCode) {
             m_memory[m_index + 1] = val % 10;
             val = val / 10;
             m_memory[m_index] = val % 10;
+            break;
+        case 0x55:
+            // FX55 - store VO-VX in memory starting from the index
+            for (int i = 0; i < secondNibble; ++i) {
+                m_memory[m_index + i] = m_registerV[i];
+            }
+
+            if (m_type == COSMAC_VIP) {
+                m_index += secondNibble + 1;
+            }
+            break;
+        case 0x65:
+            // FX65 - load the value in memory starting from the index into V0-VX
+            for (int i = 0; i < secondNibble; ++i) {
+                m_registerV[i] = m_memory[m_index + i];
+            }
+
+            if (m_type == COSMAC_VIP) {
+                m_index += secondNibble + 1;
+            }
             break;
         default:
             throw new UnknownOpCodeException(opCode);
