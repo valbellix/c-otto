@@ -13,6 +13,7 @@ target_link_libraries(c-otto
     PRIVATE
         c8
         CLI11::CLI11
+        SDL2::SDL2
 )
 
 install(TARGETS c-otto
