@@ -7,13 +7,26 @@
 #include <fstream>
 #include <sys/stat.h>
 
+#include "SDLSystem.h"
+
 inline bool fileExist(const std::string& fileName) {
     struct stat buffer;
     return (stat(fileName.c_str(), &buffer) == 0);
 }
 
+Emulator::Emulator(
+    const int scale, const int width, const int height)
+        : m_cpu(), m_system(new SDLSystem(Emulator::TITLE, scale, width, height)) {
+}
+
 void Emulator::init() {
     m_cpu.init();
+}
+
+void Emulator::start() {
+    do {
+        m_cpu.executeCycle();
+    } while (true);
 }
 
 void Emulator::loadFile(const std::string& fileName) {

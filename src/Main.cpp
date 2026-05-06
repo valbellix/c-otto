@@ -11,10 +11,11 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(cliApp, argc, argv);
 
-    Emulator emu;
+    Emulator emu(10, 32, 64);
     try {
         emu.init();
         emu.loadFile(fileName);
+        emu.start();
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
         return 1;

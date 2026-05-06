@@ -2,7 +2,7 @@
 
 #include <SDL.h>
 
-SDLSystem::SDLSystem(const std::string& title, const int scale, const int height, const int width): System(title, scale, height, width) {
+SDLSystem::SDLSystem(const std::string& title, const int scale, const int width, const int height): System(title, scale, width, height) {
     SDL_Init(SDL_INIT_VIDEO);
     m_window = SDL_CreateWindow(title.c_str(), 0, 0, scale * width, scale * height, SDL_WINDOW_SHOWN);
     m_renderer = SDL_CreateRenderer(m_window, -1, SDL_RENDERER_ACCELERATED);
