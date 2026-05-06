@@ -8,6 +8,8 @@
 #include <cstdlib>
 #include <ctime>
 
+#define START_ADDRESS 0x200
+
 Cpu::Cpu(const Type type): m_type(type), m_updateScreen(false) {}
 
 Cpu::Cpu(): Cpu(COSMAC_VIP) {}
@@ -15,7 +17,7 @@ Cpu::Cpu(): Cpu(COSMAC_VIP) {}
 void Cpu::init() {
     m_index = 0;
     // the system expect the application to be loaded starting at 0x200 that would be the PC starting value
-    m_pc = 0x200;
+    m_pc = START_ADDRESS;
     m_delayTimer = 0;
     m_soundTimer = 0;
     m_stackPointer = 0;
@@ -33,13 +35,13 @@ void Cpu::init() {
 }
 
 void Cpu::loadBufferIntoMemory(const uchar* buffer, const size_t length) {
-    if ((0x200 + length) > 0xFFF) {
+    if ((START_ADDRESS + length) > 0xFFF) {
         throw OutOfBoundaryException("The buffer is too big to be loaded");
     } else if (buffer == NULL || length == 0) {
         throw BufferNotValidException();
     }
-    for (ushort i = 0x200; i < 0xFFF; ++i) {
-        m_memory[i] = buffer[i];
+    for (ushort i = 0; i < length; ++i) {
+        m_memory[START_ADDRESS + i] = buffer[i];
     }
 }
 
