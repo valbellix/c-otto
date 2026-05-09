@@ -24,35 +24,29 @@ void Cpu::init() {
 
     m_updateScreen = false;
 
-    // clear memory and load fontset from 0x50
-    memset(m_memory, 0, sizeof(m_memory));
     loadFontSet();
-
-    memset(m_registerV, 0, sizeof(m_registerV));
-    memset(m_graphicSys, 0, sizeof(m_graphicSys));
-    memset(m_stack, 0, sizeof(m_stack));
-    memset(m_key, 0, sizeof(m_key));
 }
 
-void Cpu::loadBufferIntoMemory(const uchar* buffer, const size_t length) {
+void Cpu::loadBufferIntoMemory(const uint8_t* buffer, const size_t length) {
     if ((START_ADDRESS + length) > 0xFFF) {
         throw OutOfBoundaryException("The buffer is too big to be loaded");
-    } else if (buffer == NULL || length == 0) {
+    }
+    if (buffer == nullptr || length == 0) {
         throw BufferNotValidException();
     }
-    for (ushort i = 0; i < length; ++i) {
+    for (uint16_t i = 0; i < length; ++i) {
         m_memory[START_ADDRESS + i] = buffer[i];
     }
 }
 
 void Cpu::loadFontSet() {
-    for (ushort i = m_fontStartLocation; i < 80; ++i) {
+    for (uint16_t i = m_fontStartLocation; i < 80; ++i) {
         m_memory[i] = m_fontSet[i];
     }
 }
 
 void Cpu::executeCycle() {
-    ushort opCode = fetchOpCode();
+    uint16_t opCode = fetchOpCode();
     executeOpCode(opCode);
 
     // update timers
@@ -67,10 +61,10 @@ void Cpu::executeCycle() {
     }
 }
 
-ushort Cpu::fetchOpCode() const {
+uint16_t Cpu::fetchOpCode() const {
     // each address contains 1 byte, opcodes are 2 bytes long
     // it means that we need to merge two successive occurrences
-    // in a ushort (2 bytes) so we shift the first 8 bits to the right 
+    // in a uint16_t (2 bytes) so we shift the first 8 bits to the right 
     // and then bitwise OR with the second occurrence
     return m_memory[m_pc] << 8 | m_memory[m_pc+1];
 }
@@ -79,32 +73,35 @@ void Cpu::beep() {
     std::cout << "BEEP!" << std::endl;
 }
 
-void Cpu::executeOpCode(ushort opCode) {
+void Cpu::executeOpCode(uint16_t opCode) {
     // bitmasks to be used to decode the opcode
-    const ushort firstMask = 0xF000;
-    const ushort secondMask = 0x0F00;
-    const ushort lastTwoMask = 0x00FF;
-    const ushort lastThreeMask = 0x0FFF;
-    const ushort lastMask = 0x000F;
+    constexpr uint16_t firstMask = 0xF000;
+    constexpr uint16_t secondMask = 0x0F00;
+    constexpr uint16_t lastTwoMask = 0x00FF;
+    constexpr uint16_t lastThreeMask = 0x0FFF;
+    constexpr uint16_t lastMask = 0x000F;
 
-    const ushort opCodeClass = opCode & firstMask;
-    const ushort secondNibble = (opCode & secondMask) >> 8;
-    const uchar lastTwoNibbles = opCode & lastTwoMask;
-    const ushort lastThreeNibbles = opCode & lastThreeMask;
-    const uchar thirdNibble = (lastThreeNibbles & 0x100) >> 8;
-    const uchar lastNibble = static_cast<const uchar>(opCode & lastMask);
+    const uint16_t opCodeClass = opCode & firstMask;
+    const uint16_t secondNibble = (opCode & secondMask) >> 8;
+    const uint8_t lastTwoNibbles = opCode & lastTwoMask;
+    const uint16_t lastThreeNibbles = opCode & lastThreeMask;
+    const uint8_t thirdNibble = (lastThreeNibbles >> 4) & 0x0F;
+    const uint8_t lastNibble = static_cast<const uint8_t>(opCode & lastMask);
 
     bool incrementPc = true;
 
     short subCode;
-    uchar originalValue;
+    uint8_t originalValue;
     int keyIndex;
-    uchar val;
-    ushort oriIndex;
+    uint8_t val;
+    uint16_t oriIndex;
 
     switch (opCodeClass) {
     case 0x0000:
         switch (opCode) {
+        case 0x0000:
+            // 0000 - NOOP
+            break;
         case 0x00E0:
             // 00E0 - clears the screen
             memset(m_graphicSys, 0, sizeof(m_graphicSys));
@@ -114,7 +111,7 @@ void Cpu::executeOpCode(ushort opCode) {
             m_pc = m_stack[m_stackPointer--];
             break;
         default:
-            throw new UnknownOpCodeException(opCode);
+            throw UnknownOpCodeException(opCode);
         }
         break;
     case 0x1000:
@@ -210,7 +207,7 @@ void Cpu::executeOpCode(ushort opCode) {
             m_registerV[0xF] = ((m_registerV[secondNibble] & 0x80) == 0x80) ? 1 : 0;
             m_registerV[secondNibble] = m_registerV[secondNibble] >> 1;
         default:
-            throw new UnknownOpCodeException(opCode);
+            throw UnknownOpCodeException(opCode);
         }
         break;
     case 0x9000:
@@ -236,7 +233,7 @@ void Cpu::executeOpCode(ushort opCode) {
     case 0xC000:
         // CXNN - generates a random number, it does a bitwise AND with NN and store in VX
         std::srand(std::time(0));
-        m_registerV[secondNibble] = (static_cast<uchar>(std::rand()) % UCHAR_MAX) & lastTwoNibbles;
+        m_registerV[secondNibble] = (static_cast<uint8_t>(std::rand()) % UINT8_MAX) & lastTwoNibbles;
         break;
     case 0xD000:
         // DXYN - well... it displays a sprite of N pixels starting from I to XY
@@ -260,7 +257,7 @@ void Cpu::executeOpCode(ushort opCode) {
             }
             break;
         default:
-            throw new UnknownOpCodeException(opCode);
+            throw UnknownOpCodeException(opCode);
         }
         break;
     case 0xF000:
@@ -341,11 +338,11 @@ void Cpu::executeOpCode(ushort opCode) {
             }
             break;
         default:
-            throw new UnknownOpCodeException(opCode);
+            throw UnknownOpCodeException(opCode);
         }
         break;
     default:
-        throw new UnknownOpCodeException(opCode);
+        throw UnknownOpCodeException(opCode);
     }
 
     if (incrementPc) {
@@ -354,17 +351,19 @@ void Cpu::executeOpCode(ushort opCode) {
     }
 }
 
-void Cpu::display(const uchar startX, const uchar startY, const uchar height) {
+void Cpu::display(const uint8_t startX, const uint8_t startY, const uint8_t height) {
     m_registerV[0xF] = 0;
-    for (uchar y = 0; y < height; ++y) {
-        uchar row = m_memory[m_index + y];
-        for (uchar x = 0; x < 8; ++x) {
+    for (uint8_t y = 0; y < height; ++y) {
+        uint8_t row = m_memory[m_index + y];
+        for (uint8_t x = 0; x < 8; ++x) {
             if ((row & (0x80 >> x)) != 0) {
-                ushort index = startX + x + ((startY + y) * 64);
-                if (m_graphicSys[index] == 1) {
+                uint16_t index = startX + x + ((startY + y) * 64);
+                if (m_graphicSys[index] == PIXEL_ON) {
                     m_registerV[0xF] = 1;
                 }
-                m_graphicSys[index] ^= 1;
+
+                // This XOR operation will make the pixel off if it is on and vice versa
+                m_graphicSys[index] ^= PIXEL_ON;
             }
         }
     }
@@ -372,7 +371,7 @@ void Cpu::display(const uchar startX, const uchar startY, const uchar height) {
     m_updateScreen = true;
 }
 
-const uchar Cpu::m_fontSet[] = {
+const uint8_t Cpu::m_fontSet[] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
     0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2

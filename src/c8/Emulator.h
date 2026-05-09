@@ -9,7 +9,7 @@
 
 class Emulator {
 public:
-    Emulator(const int scale, const int width, const int height);
+    Emulator(const int width, const int height);
     ~Emulator() {}
 
     void init();

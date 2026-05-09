@@ -6,11 +6,11 @@
 #include <sstream>
 #include <iomanip>
 #include <string>
-#include "../Defs.h"
+#include <cstdint>
 
 class UnknownOpCodeException: public std::exception {
 public:
-    UnknownOpCodeException(const ushort opCode) {
+    UnknownOpCodeException(const uint16_t opCode) {
         std::stringstream ss;
         ss << "0x" << std::hex << std::uppercase << opCode;
         m_message = "OpCode '" + ss.str() + "' is unknown";

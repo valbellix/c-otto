@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(cliApp, argc, argv);
 
-    Emulator emu(10, 32, 64);
+    Emulator emu(1024, 512);
     try {
         emu.init();
         emu.loadFile(fileName);
