@@ -24,14 +24,19 @@ void Emulator::init() {
 }
 
 void Emulator::start() {
+    bool quit = false;
     do {
+        quit = m_system->readKeyEvent(m_cpu);
+        if (quit) {
+            exit(0);
+        }
         m_cpu.executeCycle();
         if (m_cpu.updateScreen()) {
             m_cpu.setUpdateScreen(false);
             m_system->update(m_cpu.getGraphicBuffer());
         }
         std::this_thread::sleep_for(std::chrono::microseconds(1200));
-    } while (true);
+    } while (!quit);
 }
 
 void Emulator::loadFile(const std::string& fileName) {

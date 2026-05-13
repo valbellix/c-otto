@@ -2,11 +2,10 @@
 #include "exceptions/OutOfBoundaryException.h"
 #include "exceptions/BufferNotValidException.h"
 #include "exceptions/UnkownOpCodeException.h"
+#include "exceptions/InvalidKeyPadPositionException.h"
 
 #include <cstring>
 #include <string>
-#include <cstdlib>
-#include <ctime>
 
 #define START_ADDRESS 0x200
 
@@ -71,6 +70,13 @@ uint16_t Cpu::fetchOpCode() const {
 
 void Cpu::beep() {
     std::cout << "BEEP!" << std::endl;
+}
+
+void Cpu::setKeyPad(const size_t position, const int value) {
+    if (position >= KEYPAD_STATES) {
+        throw InvalidKeyPadPositionException(position);
+    }
+    m_key[position] = (value == 0) ? 0 : 1;
 }
 
 void Cpu::executeOpCode(uint16_t opCode) {

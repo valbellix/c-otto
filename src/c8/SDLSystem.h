@@ -9,10 +9,10 @@ class SDL_Texture;
 
 class SDLSystem: public System {
 public:
-    SDLSystem(const std::string& title, const int height, const int width);
+    SDLSystem(const std::string& title, int height, int width);
     virtual ~SDLSystem();
 
-    bool keyEvent(const uint8_t keyEvent);
+    bool readKeyEvent(Cpu& cpu);
     void update(const void* buffer);
 private:
     SDL_Window* m_window;

@@ -26,13 +26,15 @@ public:
 
     void init();
     void executeCycle();
-    void loadBufferIntoMemory(const uint8_t* buffer, const size_t length);
+    void loadBufferIntoMemory(const uint8_t* buffer, size_t length);
 
     bool updateScreen() const { return m_updateScreen; }
 
     Type getType() const { return m_type; }
 
     const uint32_t* getGraphicBuffer() const { return m_graphicSys; }
+    const uint8_t* getKeyPad() const { return m_key; }
+    void setKeyPad(size_t position, int value);
 
     void setUpdateScreen(const bool updateScreen) { m_updateScreen = updateScreen; }
 
