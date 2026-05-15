@@ -21,10 +21,12 @@ public:
     };
 
     Cpu();
-    Cpu(const Type);
+    Cpu(bool debugFlag);
+    Cpu(bool debugFlag, const Type);
     ~Cpu() {}
 
     void init();
+    bool getDebugFlag() const { return m_debug; }
     void executeCycle();
     void loadBufferIntoMemory(const uint8_t* buffer, size_t length);
 
@@ -58,6 +60,7 @@ private:
     Type m_type;
 
     bool m_updateScreen;
+    bool m_debug;
 
     uint16_t fetchOpCode() const;
     void executeOpCode(uint16_t opCode);

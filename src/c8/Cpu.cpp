@@ -6,12 +6,25 @@
 
 #include <cstring>
 #include <string>
+#include <sstream>
+#include <iostream>
+#include <ios>
 
 #define START_ADDRESS 0x200
 
-Cpu::Cpu(const Type type): m_type(type), m_updateScreen(false) {}
+template<typename T>
+std::string toHex(T s) {
+    std::stringstream ss;
+    ss << "0x" << std::setfill('0') << std::setw(sizeof(T) * 2);
+    ss << std::hex << s;
+    return ss.str();
+}
 
-Cpu::Cpu(): Cpu(COSMAC_VIP) {}
+Cpu::Cpu(const bool debugFlag, const Type type): m_type(type), m_updateScreen(false), m_debug(debugFlag) {}
+
+Cpu::Cpu(const bool debugFlag): Cpu(debugFlag, COSMAC_VIP) {}
+
+Cpu::Cpu(): Cpu(false, COSMAC_VIP) {}
 
 void Cpu::init() {
     m_index = 0;
@@ -45,7 +58,8 @@ void Cpu::loadFontSet() {
 }
 
 void Cpu::executeCycle() {
-    uint16_t opCode = fetchOpCode();
+    const uint16_t opCode = fetchOpCode();
+    std::cout << std::format("Executing: {}", toHex(opCode)) << std::endl;
     executeOpCode(opCode);
 
     // update timers

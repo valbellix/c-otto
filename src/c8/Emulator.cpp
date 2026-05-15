@@ -15,8 +15,8 @@ inline bool fileExist(const std::string& fileName) {
     return (stat(fileName.c_str(), &buffer) == 0);
 }
 
-Emulator::Emulator(const int width, const int height)
-        : m_cpu(), m_system(new SDLSystem(Emulator::TITLE, width, height)) {
+Emulator::Emulator(const int width, const int height, const bool debugFlag)
+        : m_cpu(debugFlag), m_system(new SDLSystem(Emulator::TITLE, width, height)) {
 }
 
 void Emulator::init() {
@@ -35,7 +35,17 @@ void Emulator::start() {
             m_cpu.setUpdateScreen(false);
             m_system->update(m_cpu.getGraphicBuffer());
         }
-        std::this_thread::sleep_for(std::chrono::microseconds(1200));
+        if (m_cpu.getDebugFlag()) {
+            std::cout << "? ";
+            std::string k;
+            std::cin >> k;
+
+            if (k == "quit") {
+                quit = true;
+            }
+        } else {
+            std::this_thread::sleep_for(std::chrono::microseconds(1200));
+        }
     } while (!quit);
 }
 
