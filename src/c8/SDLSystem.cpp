@@ -82,6 +82,7 @@ bool SDLSystem::readKeyEvent(Cpu& cpu) {
                     break;
                 default:
                     // do nothing
+                    break;
             }
         } else if (event.type == SDL_KEYUP) {
             switch (event.key.keysym.sym) {
@@ -135,6 +136,7 @@ bool SDLSystem::readKeyEvent(Cpu& cpu) {
                     break;
                 default:
                     // do nothing
+                    break;
             }
         } else if (event.type == SDL_QUIT) {
             quit = true;
